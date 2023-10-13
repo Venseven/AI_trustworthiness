@@ -10,8 +10,8 @@ import argparse
 from tqdm import tqdm
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Train different models on various datasets')
-parser.add_argument('--model', type=str, choices=['LeNet', 'VGG16', 'ResNet'], help='Model type (LeNet, VGG16, ResNet)')
-parser.add_argument('--dataset', type=str, choices=['MNIST', 'CIFAR10'], help='Dataset type (MNIST, CIFAR-10)')
+parser.add_argument('--model', type=str, choices=['LeNet', 'VGG16', 'ResNet'], default = "LeNet", help='Model type (LeNet, VGG16, ResNet)')
+parser.add_argument('--dataset', type=str, choices=['MNIST', 'CIFAR10'], default = "CIFAR10", help='Dataset type (MNIST, CIFAR-10)')
 args = parser.parse_args()
 
 # Choose your model and dataset based on command-line arguments
@@ -61,13 +61,13 @@ for epoch in range(epochs):
                 _, train_predicted = torch.max(train_output.data, 1)
                 train_accuracy = (train_predicted == target).sum().item() / len(target)
                 testing_loss, testing_accuracy = 0, 0
-                for test_data, test_target in test_loader:
+                for n, (test_data, test_target) in enumerate(test_loader):
                     test_data, test_target = test_data.to(device), test_target.to(device)   
                     test_output = model(test_data)
                     testing_loss += criterion(test_output, test_target).item()
                     _, test_predicted = torch.max(test_output.data, 1)
                     testing_accuracy += (test_predicted == test_target).sum().item()
-                testing_loss /= len(test_loader.dataset)
+                testing_loss /= n+1
                 testing_accuracy /= len(test_loader.dataset)
 
                 # Record metrics
@@ -82,7 +82,7 @@ for epoch in range(epochs):
 
 
 model_filename = f'{args.model}_{args.dataset}_Model.pth'
-torch.save(model.state_dict(), f'/home/ridha/Documents/AI539Trustworthy/trained_models/{model_filename}')  # Save the model
+torch.save(model.state_dict(), f'/scratch/subramav/AI_trustworthiness/trained_models/{model_filename}')  # Save the model
 
 
 # Plot the training and testing accuracies and losses
@@ -100,6 +100,6 @@ plt.plot(range(len(testing_losses)), testing_losses, label='Testing Loss')
 plt.xlabel('Steps')
 plt.ylabel('Loss')
 plt.legend()
-plt.savefig(f'/home/ridha/Documents/AI539Trustworthy/images/{args.model}_{args.dataset}_Model.png') 
+plt.savefig(f'/scratch/subramav/AI_trustworthiness/images/{args.model}_{args.dataset}_Model.png') 
 
 

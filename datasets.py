@@ -1,7 +1,7 @@
 import torch
 from torchvision import datasets, transforms
 
-def load_mnist(batch_size=64):
+def load_mnist(batch_size=32):
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
@@ -16,7 +16,7 @@ def load_mnist(batch_size=64):
     )
     return train_loader, test_loader
 
-def load_cifar10(batch_size=64):
+def load_cifar10(batch_size=32):
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
