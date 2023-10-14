@@ -1,10 +1,11 @@
 import torch
 from torchvision import datasets, transforms
 
-def load_mnist(batch_size=32):
+def load_mnist(batch_size=64):
     transform = transforms.Compose([
+        transforms.RandomHorizontalFlip(),  # Randomly flip the images horizontally
         transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST('data/', train=True, download=True, transform=transform),
@@ -16,7 +17,7 @@ def load_mnist(batch_size=32):
     )
     return train_loader, test_loader
 
-def load_cifar10(batch_size=32):
+def load_cifar10(batch_size=64):
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))

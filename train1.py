@@ -10,8 +10,11 @@ import argparse
 from tqdm import tqdm
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description='Train different models on various datasets')
-parser.add_argument('--model', type=str, choices=['LeNet', 'VGG16', 'ResNet'], default = "LeNet", help='Model type (LeNet, VGG16, ResNet)')
+parser.add_argument('--model', type=str, choices=['LeNet', 'VGG16', 'ResNet'], default = "ResNet", help='Model type (LeNet, VGG16, ResNet)')
 parser.add_argument('--dataset', type=str, choices=['MNIST', 'CIFAR10'], default = "CIFAR10", help='Dataset type (MNIST, CIFAR-10)')
+parser.add_argument('--lr', type=float, default = 0.01, help='Dataset type (MNIST, CIFAR-10)')
+parser.add_argument('--bs', type=int, default = 64, help='Dataset type (MNIST, CIFAR-10)')
+parser.add_argument('--opt', type=str, default = "SGD", help='Dataset type (MNIST, CIFAR-10)')
 args = parser.parse_args()
 
 # Choose your model and dataset based on command-line arguments
@@ -22,20 +25,25 @@ elif args.model == 'VGG16':
 elif args.model == 'ResNet':
     model = ResNet18( dataset=args.dataset)
 if args.dataset == 'MNIST':
-    train_loader, test_loader = load_mnist()
+    train_loader, test_loader = load_mnist(batch_size=args.bs)
 elif args.dataset == 'CIFAR10':
-    train_loader, test_loader = load_cifar10()
+    train_loader, test_loader = load_cifar10(batch_size=args.bs)
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 # Define your optimizer and loss function
-optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+if args.opt == "SGD":
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+elif args.opt == "Adam":
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+else:
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
 criterion = F.cross_entropy
 
 # Training loop
-epochs = 10
+epochs = 5
 training_accuracies = []
 testing_accuracies = []
 training_losses = []
@@ -53,35 +61,35 @@ for epoch in range(epochs):
         optimizer.step()
 
         # Compute and record training accuracy and loss every 5 training iterations (epochs)
-        if batch_idx % 5 == 0:
-            with torch.no_grad():
-                model.eval()
-                train_output = model(data)
-                train_loss = criterion(train_output, target)
-                _, train_predicted = torch.max(train_output.data, 1)
-                train_accuracy = (train_predicted == target).sum().item() / len(target)
-                testing_loss, testing_accuracy = 0, 0
-                for n, (test_data, test_target) in enumerate(test_loader):
-                    test_data, test_target = test_data.to(device), test_target.to(device)   
-                    test_output = model(test_data)
-                    testing_loss += criterion(test_output, test_target).item()
-                    _, test_predicted = torch.max(test_output.data, 1)
-                    testing_accuracy += (test_predicted == test_target).sum().item()
-                testing_loss /= n+1
-                testing_accuracy /= len(test_loader.dataset)
+        # if batch_idx % 5 == 0:
+    with torch.no_grad():
+        model.eval()
+        train_output = model(data)
+        train_loss = criterion(train_output, target)
+        _, train_predicted = torch.max(train_output.data, 1)
+        train_accuracy = (train_predicted == target).sum().item() / len(target)
+        testing_loss, testing_accuracy = 0, 0
+        for n, (test_data, test_target) in enumerate(test_loader):
+            test_data, test_target = test_data.to(device), test_target.to(device)   
+            test_output = model(test_data)
+            testing_loss += criterion(test_output, test_target).item()
+            _, test_predicted = torch.max(test_output.data, 1)
+            testing_accuracy += (test_predicted == test_target).sum().item()
+        testing_loss /= n+1
+        testing_accuracy /= len(test_loader.dataset)
 
-                # Record metrics
-                training_accuracies.append(train_accuracy)
-                testing_accuracies.append(testing_accuracy)
-                training_losses.append(train_loss.item())
-                testing_losses.append(testing_loss)
+        # Record metrics
+        training_accuracies.append(train_accuracy)
+        testing_accuracies.append(testing_accuracy)
+        training_losses.append(train_loss.item())
+        testing_losses.append(testing_loss)
 
-            print('Epoch: {} [{}/{} ({:.0f}%)]\tTraining Loss: {:.6f}\tTesting Loss: {:.6f}\tTraining Accuracy: {:.4f}\tTesting Accuracy: {:.4f}'.format(
-                    epoch, batch_idx * len(data), len(train_loader.dataset),
-                     100. * batch_idx / len(train_loader), train_loss.item(), testing_loss, train_accuracy, testing_accuracy))
+    print('Epoch: {} [{}/{} ({:.0f}%)]\tTraining Loss: {:.6f}\tTesting Loss: {:.6f}\tTraining Accuracy: {:.4f}\tTesting Accuracy: {:.4f}'.format(
+            epoch, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), train_loss.item(), testing_loss, train_accuracy, testing_accuracy))
 
 
-model_filename = f'{args.model}_{args.dataset}_Model.pth'
+model_filename = f'{args.model}_{args.dataset}_{args.lr}_{args.bs}_{args.opt}_with_flip.pth'
 torch.save(model.state_dict(), f'/scratch/subramav/AI_trustworthiness/trained_models/{model_filename}')  # Save the model
 
 
@@ -100,6 +108,6 @@ plt.plot(range(len(testing_losses)), testing_losses, label='Testing Loss')
 plt.xlabel('Steps')
 plt.ylabel('Loss')
 plt.legend()
-plt.savefig(f'/scratch/subramav/AI_trustworthiness/images/{args.model}_{args.dataset}_Model.png') 
+plt.savefig(f'/scratch/subramav/AI_trustworthiness/images/{args.model}_{args.dataset}_{args.lr}_{args.bs}_{args.opt}_with_flip.png') 
 
 
